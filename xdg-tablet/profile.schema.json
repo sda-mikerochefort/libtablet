@@ -1,0 +1,647 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gitlab.freedesktop.org/libtablet/libtablet/-/raw/main/xdg-tablet/profile.schema.json",
+  "title": "XDG Tablet Profiles (schema-version 1)",
+  "description": "Schema for $XDG_CONFIG_HOME/xdg-tablet/profiles.toml after TOML parsing. See profiles.md. Semantic constraints not expressible here (area x1<x2, y1<y2; pressure-range min<max; unique device ids; radial-menu references) are checked by validators separately.",
+  "type": "object",
+  "properties": {
+    "schema-version": {
+      "const": 1
+    },
+    "device": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "match": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/match-string"
+            },
+            "minItems": 1
+          },
+          "mapping": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "enum": [
+                  "absolute",
+                  "relative"
+                ]
+              },
+              "target": {
+                "enum": [
+                  "auto",
+                  "edid",
+                  "connector",
+                  "desktop"
+                ]
+              },
+              "edid": {
+                "$ref": "#/$defs/edid"
+              },
+              "connector": {
+                "type": "string",
+                "minLength": 1
+              },
+              "keep-aspect": {
+                "type": "boolean"
+              },
+              "area": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "minItems": 4,
+                "maxItems": 4,
+                "description": "[x1, y1, x2, y2], x1 < x2, y1 < y2"
+              },
+              "rotation": {
+                "$ref": "#/$defs/rotation"
+              },
+              "left-handed": {
+                "type": "boolean"
+              },
+              "cycle": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/cycle-entry"
+                },
+                "minItems": 1
+              }
+            },
+            "patternProperties": {
+              "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+            },
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "target": {
+                      "const": "edid"
+                    }
+                  },
+                  "required": [
+                    "target"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "edid"
+                  ]
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "target": {
+                      "const": "connector"
+                    }
+                  },
+                  "required": [
+                    "target"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "connector"
+                  ]
+                }
+              }
+            ]
+          },
+          "touch": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "arbitration": {
+                "enum": [
+                  "strict-proximity",
+                  "handedness-palm-zone",
+                  "off"
+                ]
+              }
+            },
+            "patternProperties": {
+              "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+            },
+            "additionalProperties": false
+          },
+          "tool": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/tool"
+            }
+          },
+          "pad": {
+            "$ref": "#/$defs/pad"
+          },
+          "oled": {
+            "$ref": "#/$defs/oled"
+          }
+        },
+        "patternProperties": {
+          "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "match"
+        ]
+      }
+    },
+    "radial-menu": {
+      "$ref": "#/$defs/radial-menus"
+    },
+    "app": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "app-id": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              }
+            ]
+          },
+          "device": {
+            "oneOf": [
+              {
+                "const": "*"
+              },
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9._-]*$"
+              }
+            ]
+          },
+          "pad": {
+            "$ref": "#/$defs/pad"
+          },
+          "tool": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/tool"
+            }
+          },
+          "oled": {
+            "$ref": "#/$defs/oled"
+          },
+          "radial-menu": {
+            "$ref": "#/$defs/radial-menus"
+          }
+        },
+        "patternProperties": {
+          "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+        },
+        "additionalProperties": false,
+        "required": [
+          "app-id"
+        ]
+      }
+    }
+  },
+  "patternProperties": {
+    "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+  },
+  "additionalProperties": false,
+  "required": [
+    "schema-version"
+  ],
+  "$defs": {
+    "action-string": {
+      "type": "string",
+      "pattern": "^(none|passthrough|display-toggle|mode-switch|osd|eraser|mode-set:[0-9]+|radial-menu:[a-z0-9][a-z0-9._-]*|button:(left|middle|right|back|forward|[1-9]|[12][0-9]|3[0-2])|scroll:(up|down|left|right)|(keys:)?((Ctrl|Shift|Alt|Super|Meta|Hyper|AltGr)\\+)*[A-Za-z0-9_]+)$"
+    },
+    "action": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/action-string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/action-string"
+            },
+            "label": {
+              "type": "string"
+            }
+          },
+          "patternProperties": {
+            "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+          },
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ]
+        }
+      ]
+    },
+    "match-string": {
+      "type": "string",
+      "pattern": "^(usb|bluetooth|serial|i2c)\\|[0-9A-Fa-f]{4}\\|[0-9A-Fa-f]{4}(\\|[^|]*(\\|[^|]*)?)?$"
+    },
+    "curve": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "minItems": 4,
+      "maxItems": 4,
+      "description": "Bezier control points [x1, y1, x2, y2]; P0=(0,0), P3=(1,1) are implicit."
+    },
+    "range": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "rotation": {
+      "enum": [
+        0,
+        90,
+        180,
+        270
+      ]
+    },
+    "edid": {
+      "type": "object",
+      "properties": {
+        "vendor": {
+          "type": "string"
+        },
+        "product": {
+          "type": "string"
+        },
+        "serial": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+      },
+      "additionalProperties": false
+    },
+    "button-map": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Z]$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/action"
+      }
+    },
+    "control": {
+      "type": "object",
+      "properties": {
+        "modes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/control-mode"
+          }
+        }
+      },
+      "required": [
+        "modes"
+      ],
+      "patternProperties": {
+        "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+      },
+      "additionalProperties": false
+    },
+    "control-mode": {
+      "type": "object",
+      "properties": {
+        "cw": {
+          "$ref": "#/$defs/action"
+        },
+        "ccw": {
+          "$ref": "#/$defs/action"
+        },
+        "up": {
+          "$ref": "#/$defs/action"
+        },
+        "down": {
+          "$ref": "#/$defs/action"
+        },
+        "label": {
+          "type": "string"
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "patternProperties": {
+        "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+      },
+      "additionalProperties": false
+    },
+    "pad": {
+      "type": "object",
+      "properties": {
+        "unbound": {
+          "enum": [
+            "passthrough",
+            "none"
+          ]
+        },
+        "buttons": {
+          "$ref": "#/$defs/button-map"
+        },
+        "ring": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/control"
+          }
+        },
+        "strip": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/control"
+          }
+        },
+        "dial": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/control"
+          }
+        },
+        "mode-override": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "mode": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "buttons": {
+                "$ref": "#/$defs/button-map"
+              }
+            },
+            "patternProperties": {
+              "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+            },
+            "additionalProperties": false,
+            "required": [
+              "group",
+              "mode",
+              "buttons"
+            ]
+          }
+        }
+      },
+      "patternProperties": {
+        "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+      },
+      "additionalProperties": false
+    },
+    "tool": {
+      "type": "object",
+      "properties": {
+        "match": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "enum": [
+                "pen",
+                "eraser",
+                "brush",
+                "pencil",
+                "airbrush",
+                "mouse",
+                "lens",
+                "any"
+              ]
+            },
+            "tool-id": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "serial": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "patternProperties": {
+            "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+          },
+          "additionalProperties": false,
+          "required": [
+            "type"
+          ]
+        },
+        "pressure-curve": {
+          "$ref": "#/$defs/curve"
+        },
+        "pressure-range": {
+          "$ref": "#/$defs/range"
+        },
+        "eraser-pressure-curve": {
+          "$ref": "#/$defs/curve"
+        },
+        "eraser-pressure-range": {
+          "$ref": "#/$defs/range"
+        },
+        "eraser-mode": {
+          "enum": [
+            "default",
+            "button"
+          ]
+        },
+        "eraser-button": {
+          "$ref": "#/$defs/action"
+        },
+        "buttons": {
+          "type": "object",
+          "properties": {
+            "primary": {
+              "$ref": "#/$defs/action"
+            },
+            "secondary": {
+              "$ref": "#/$defs/action"
+            },
+            "tertiary": {
+              "$ref": "#/$defs/action"
+            }
+          },
+          "patternProperties": {
+            "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+          },
+          "additionalProperties": false
+        }
+      },
+      "patternProperties": {
+        "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+      },
+      "additionalProperties": false,
+      "required": [
+        "match"
+      ]
+    },
+    "oled": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "brightness": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rotation": {
+          "$ref": "#/$defs/rotation"
+        },
+        "content": {
+          "enum": [
+            "labels",
+            "app-name",
+            "off"
+          ]
+        },
+        "labels": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Z]$"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "patternProperties": {
+        "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+      },
+      "additionalProperties": false
+    },
+    "radial-menus": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9][a-z0-9._-]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 12,
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "action": {
+                  "$ref": "#/$defs/action-string"
+                },
+                "icon": {
+                  "type": "string"
+                }
+              },
+              "patternProperties": {
+                "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+              },
+              "additionalProperties": false,
+              "required": [
+                "label",
+                "action"
+              ]
+            }
+          }
+        },
+        "patternProperties": {
+          "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+        },
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ]
+      }
+    },
+    "cycle-entry": {
+      "oneOf": [
+        {
+          "enum": [
+            "target",
+            "desktop",
+            "next-output"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "edid": {
+              "$ref": "#/$defs/edid"
+            }
+          },
+          "patternProperties": {
+            "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+          },
+          "additionalProperties": false,
+          "required": [
+            "edid"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "connector": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "patternProperties": {
+            "^x-[A-Za-z0-9][A-Za-z0-9._-]*$": true
+          },
+          "additionalProperties": false,
+          "required": [
+            "connector"
+          ]
+        }
+      ]
+    }
+  }
+}

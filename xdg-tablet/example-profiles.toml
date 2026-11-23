@@ -1,0 +1,194 @@
+# Example $XDG_CONFIG_HOME/xdg-tablet/profiles.toml
+# See profiles.md for the specification.
+
+schema-version = 1
+
+# ---------------------------------------------------------------------------
+# Pen display: mapped to its own screen by EDID, with "Display Toggle"
+# cycling between the pen display, the whole desktop and each output.
+# ---------------------------------------------------------------------------
+[[device]]
+id = "xencelabs-pen-display-16"
+name = "Xencelabs Pen Display 16"
+match = ["usb|28bd|520b"]
+
+[device.mapping]
+target = "edid"
+edid = { vendor = "XLB", product = "Pen Display 16", serial = "" }
+connector = "DP-2"
+cycle = ["target", "desktop", "next-output"]
+
+[device.touch]
+enabled = true
+arbitration = "handedness-palm-zone"
+
+[[device.tool]]
+match = { type = "any" }
+pressure-curve = [0.20, 0.05, 0.70, 0.95]
+pressure-range = [0.02, 1.0]
+buttons = { primary = "button:middle", secondary = "radial-menu:main", tertiary = "display-toggle" }
+
+[[device.tool]]
+match = { type = "eraser" }
+pressure-curve = [0.0, 0.0, 1.0, 1.0]
+
+# ---------------------------------------------------------------------------
+# Pen display identified by firmware ID (shared USB PID, HUION_M20q uniq)
+# ---------------------------------------------------------------------------
+[[device]]
+id = "huion-kamvas-pro-16"
+name = "Huion Kamvas Pro 16 GT1602"
+match = ["usb|256c|006d||HUION_M20q", "usb|256c|006e||HUION_M20q"]
+
+[device.mapping]
+target = "auto"
+left-handed = true
+
+[device.pad]
+unbound = "passthrough"
+buttons = { A = "mode-switch", B = { action = "Ctrl+z", label = "Undo" }, C = "osd", D = "display-toggle" }
+
+[[device.pad.strip]]
+modes = [
+  { up = "bracketright", down = "bracketleft", label = "Brush size" },
+  { up = "Ctrl+plus", down = "Ctrl+minus", label = "Zoom" },
+]
+
+# ---------------------------------------------------------------------------
+# Opaque tablet with a touch ring: area cropped to 16:9, relative ring modes
+# ---------------------------------------------------------------------------
+[[device]]
+id = "wacom-intuos-pro-m"
+name = "Wacom Intuos Pro M"
+match = ["usb|056a|0357", "bluetooth|056a|0360"]
+
+[device.mapping]
+mode = "absolute"
+target = "edid"
+edid = { vendor = "DEL", product = "DELL U2720Q" }
+keep-aspect = true
+area = [0.05, 0.05, 0.95, 0.95]
+rotation = 0
+
+[[device.tool]]
+match = { type = "pen" }
+pressure-curve = [0.0, 0.0, 1.0, 1.0]
+eraser-mode = "default"
+
+[[device.tool]]
+match = { type = "pen", tool-id = 0x862, serial = 0x2a3f0c1 }   # Pro Pen 2, unit #1
+pressure-curve = [0.30, 0.10, 0.80, 0.90]
+buttons = { primary = "button:middle", secondary = "button:right", tertiary = "Ctrl+Alt+s" }
+
+[device.pad]
+buttons = { A = "Shift", B = "Ctrl", C = "Alt", D = "space", E = "mode-switch", F = "Ctrl+z", G = "Ctrl+Shift+z", H = "osd" }
+
+[[device.pad.ring]]
+modes = [
+  { cw = "bracketright", ccw = "bracketleft", label = "Brush size" },
+  { cw = "Ctrl+plus", ccw = "Ctrl+minus", label = "Zoom" },
+  { cw = "scroll:down", ccw = "scroll:up", label = "Scroll" },
+  { cw = "passthrough", ccw = "passthrough", label = "Application" },
+]
+
+# ---------------------------------------------------------------------------
+# Standalone shortcut remote with OLED labels and a dial (Quick Keys-style).
+# NOTE: not yet in libtablet; USB IDs 28bd:5202 (wired) / 28bd:5203 (dongle)
+# to be confirmed when the device definition is added.
+# ---------------------------------------------------------------------------
+[[device]]
+id = "xencelabs-quick-keys"
+name = "Xencelabs Quick Keys"
+match = ["usb|28bd|5202", "usb|28bd|5203"]
+
+[device.pad]
+unbound = "none"
+buttons = { A = "mode-switch", B = { action = "Ctrl+s", label = "Save" }, C = { action = "Ctrl+z", label = "Undo" }, D = { action = "Ctrl+Shift+z", label = "Redo" }, E = { action = "b", label = "Brush" }, F = { action = "e", label = "Eraser" }, G = { action = "space", label = "Pan" }, H = { action = "Ctrl+0", label = "Fit" }, I = { action = "Tab", label = "UI" }, J = "radial-menu:main" }
+
+[[device.pad.dial]]
+modes = [
+  { cw = "bracketright", ccw = "bracketleft", label = "Brush size", step = 1 },
+  { cw = "Ctrl+plus", ccw = "Ctrl+minus", label = "Zoom", step = 1 },
+  { cw = "Ctrl+bracketright", ccw = "Ctrl+bracketleft", label = "Rotate", step = 2 },
+  { cw = "passthrough", ccw = "passthrough", label = "Application" },
+]
+
+[device.oled]
+enabled = true
+brightness = 60
+timeout = 600
+rotation = 0
+content = "labels"
+labels = { A = "Mode" }
+
+# ---------------------------------------------------------------------------
+# Global radial menus
+# ---------------------------------------------------------------------------
+[radial-menu.main]
+items = [
+  { label = "Undo", action = "Ctrl+z", icon = "edit-undo" },
+  { label = "Redo", action = "Ctrl+Shift+z", icon = "edit-redo" },
+  { label = "Toggle display", action = "display-toggle" },
+  { label = "Pad help", action = "osd" },
+]
+
+# ---------------------------------------------------------------------------
+# Per-application overrides
+# ---------------------------------------------------------------------------
+[[app]]
+app-id = "org.kde.krita"
+device = "*"
+
+[[app.tool]]
+match = { type = "any" }
+buttons = { secondary = "radial-menu:krita" }
+
+[app.radial-menu.krita]
+items = [
+  { label = "Brush presets", action = "F6" },
+  { label = "Mirror canvas", action = "m" },
+  { label = "Reset rotation", action = "5" },
+  { label = "Colour picker", action = "Ctrl" },
+]
+
+[[app]]
+app-id = "org.kde.krita"
+device = "xencelabs-quick-keys"
+
+[app.pad]
+buttons = { E = { action = "b", label = "Freehand" }, I = { action = "Tab", label = "Canvas only" } }
+
+[[app.pad.dial]]
+modes = [
+  { cw = "bracketright", ccw = "bracketleft", label = "Brush size" },
+  { cw = "o", ccw = "i", label = "Opacity" },
+  { cw = "Shift+End", ccw = "Shift+Home", label = "Rotate" },
+  { cw = "passthrough", ccw = "passthrough", label = "Krita" },
+]
+
+[[app]]
+app-id = "org.blender.Blender"
+device = "*"
+
+[app.pad]
+buttons = { B = { action = "Ctrl+s", label = "Save" }, G = { action = "button:middle", label = "Orbit" }, H = { action = "KP_Decimal", label = "Frame" } }
+
+[[app.pad.dial]]
+modes = [
+  { cw = "passthrough", ccw = "passthrough", label = "Blender" },
+]
+
+[[app]]
+app-id = ["org.gimp.GIMP", "gimp"]
+device = "*"
+
+[[app.tool]]
+match = { type = "pen" }
+pressure-curve = [0.10, 0.0, 0.60, 1.0]
+
+[app.pad]
+buttons = { E = { action = "p", label = "Paintbrush" }, F = { action = "Shift+e", label = "Eraser" } }
+
+[app.oled]
+content = "labels"
+labels = { A = "GIMP" }

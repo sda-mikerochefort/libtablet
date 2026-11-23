@@ -351,6 +351,7 @@ if get_option('tests').enabled()
             'test_libwacom.py',
             'test_svg.py',
             'test_udev_rules.py',
+            'test_xdg_tablet_profiles.py',
         ]
     foreach f: pytest_files
         test('pytest @0@'.format(f),
